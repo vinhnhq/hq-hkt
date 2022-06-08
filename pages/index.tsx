@@ -1,51 +1,75 @@
-import React, { useState } from "react";
-import { useQuery } from "react-query";
+import { observer } from "mobx-react";
+import { useCallback, useEffect, useState } from "react";
 
-import useDebounce from "../utils/useDebounce";
-import searchPokemons from "../utils/searchPokemons";
+import { useAppContext } from "../app-context";
 
-import SampleComponent from "../components/sample";
-import PokemonsSearchResult from "../components/pokemonSearchResult";
+import Post from "../components/post";
 
-export default function IndexPage() {
-  const [searchValue, setSearchValue] = useState("");
-  const debounedSearchValue = useDebounce(searchValue, 300);
+const HomeTitlePage = observer(() => {
+  const { store } = useAppContext();
 
-  const { isLoading, isError, isSuccess, data } = useQuery(
-    ["searchPokemons", debounedSearchValue],
-    () => searchPokemons(debounedSearchValue),
-    {
-      enabled: debounedSearchValue.length > 0,
-    }
-  );
+  const [text, setText] = useState("");
 
-  const renderResult = () => {
-    if (isLoading) {
-      return <div className="search-message">Loading... </div>;
-    }
-
-    if (isError) {
-      return <div className="search-message">Something went wrong</div>;
-    }
-
-    if (isSuccess) {
-      return <PokemonsSearchResult pokemons={data} />;
-    }
-
-    return <></>;
-  };
+  console.log("rerender HOME TITLE PAGE");
 
   return (
-    <div className="home">
-      <h1>Search Your Pokemon</h1>
-      <SampleComponent title="Index Page" linkTo="/" />
-
-      <input
-        type="text"
-        onChange={({ target: { value } }) => setSearchValue(value)}
-        value={searchValue}
-      />
-      {renderResult()}
+    <div>
+      <h1>type something</h1>
+      <input value={text} onChange={(e) => setText(e.target.value)} />
     </div>
   );
-}
+});
+
+const HomeBlogPage = observer(() => {
+  const { api, store } = useAppContext();
+  const [loading, setLoading] = useState(false);
+  const [start, setStart] = useState(false);
+
+  console.log("rerender HOME BLOG PAGE");
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      await api.post.getAll();
+      await api.user.getAll();
+    } finally {
+      setLoading(false);
+      setStart(false);
+    }
+  }, [api.post, api.user]);
+
+  useEffect(() => {
+    if (start) {
+      load();
+    }
+  }, [load, start]);
+
+  if (loading) {
+    return <div>loading...</div>;
+  }
+
+  return (
+    <div>
+      <h1>Posts</h1>
+
+      <button onClick={() => setStart(!start)}>
+        {!start ? "click to load" : "loading"}
+      </button>
+
+      {store.post.all.map((post) => (
+        <Post key={post.id} post={post} />
+      ))}
+    </div>
+  );
+});
+
+const HomePage = () => {
+  return (
+    <>
+      <HomeTitlePage />
+      <HomeBlogPage />
+    </>
+  );
+};
+
+export default HomePage;

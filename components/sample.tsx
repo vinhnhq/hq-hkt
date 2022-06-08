@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 
 import Clock from "./clock";
 
-import { IStore, useStore } from "../store";
+import { IStore, useStore } from "../stores";
 
 interface IOwnProps {
   store?: IStore;
